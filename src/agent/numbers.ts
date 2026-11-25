@@ -35,7 +35,7 @@ function collect(value: unknown, currency: string | undefined, key: string, a: A
 
 const IDS = /\b(?:QP|DRF|TKT)-DEMO-\d+\b/g;
 // Money with a symbol or code before it ("S/ 9.75", "PEN 9.75", "US$ 1.00") or a word after it ("9.75 soles").
-const MONEY = /(S\/|US\$|PEN|USD)\s?(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?|(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?\s?(soles|sol|d[oó]lares|dollars?)\b/gi;
+const MONEY = /(S\/|US\$|PEN|USD)\s?(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?|(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?\s?(soles|sol|d[oó]lares|dollars?|PEN|USD)\b/gi;
 const PERCENT = /\d+(?:\.\d+)?%/g;
 
 /** Returns a list of problems. Empty list = every number in the answer comes from a tool result. */
@@ -61,7 +61,8 @@ export function inventedNumbers(answer: string, calls: ToolCall[]): string[] {
     return ' ';
   });
   rest = rest.replace(PERCENT, (p) => {
-    if (!a.percents.has(p)) problems.push(`percent ${p}`);
+    // Compare the value, not the text: "3.50%" equals "3.5%".
+    if (!a.percents.has(p) && !a.percents.has(`${Number(p.slice(0, -1))}%`)) problems.push(`percent ${p}`);
     return ' ';
   });
   for (const n of rest.match(/\d+\.\d+/g) ?? []) problems.push(`decimal ${n} with no currency`);

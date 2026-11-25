@@ -17,4 +17,29 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Live mode: the API key must stay in page memory. No storage and no logs where the key can pass.
+    files: ['src/App.tsx', 'src/agent/**', 'src/tools/**'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        { name: 'localStorage', message: 'Never store the API key or chat. Page memory only.' },
+        { name: 'sessionStorage', message: 'Never store the API key or chat. Page memory only.' },
+        { name: 'indexedDB', message: 'Never store the API key or chat. Page memory only.' },
+      ],
+      'no-console': 'error',
+      'no-restricted-properties': [
+        'error',
+        { object: 'window', property: 'localStorage', message: 'Never store the API key or chat. Page memory only.' },
+        { object: 'window', property: 'sessionStorage', message: 'Never store the API key or chat. Page memory only.' },
+        { object: 'window', property: 'indexedDB', message: 'Never store the API key or chat. Page memory only.' },
+        { object: 'globalThis', property: 'localStorage', message: 'Never store the API key or chat. Page memory only.' },
+        { object: 'globalThis', property: 'sessionStorage', message: 'Never store the API key or chat. Page memory only.' },
+        { object: 'globalThis', property: 'indexedDB', message: 'Never store the API key or chat. Page memory only.' },
+        { object: 'self', property: 'localStorage', message: 'Never store the API key or chat. Page memory only.' },
+        { object: 'self', property: 'sessionStorage', message: 'Never store the API key or chat. Page memory only.' },
+        { object: 'self', property: 'indexedDB', message: 'Never store the API key or chat. Page memory only.' },
+      ],
+    },
+  },
 );

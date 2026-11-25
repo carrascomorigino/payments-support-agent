@@ -338,3 +338,28 @@ th {
     flex-direction: column;
   }
 }
+
+/* Live mode (own key) */
+.key {
+  margin-top: var(--space-4);
+}
+
+.key summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+}
+
+.key > * + * {
+  margin-top: var(--space-3);
+}
+
+.key .field {
+  width: 100%;
+}
+
+.live-note .tag {
+  margin-right: var(--space-1);
+}

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent, type Ref } from 'react';
 import { SiteFooter, SiteHeader } from './shell/Shell.tsx';
 import { newSession, respond, type Session } from './agent/modeA.ts';
+import { askClaudeWithTools, LiveModeError, MAX_QUESTION_OUTPUT_TOKENS, MAX_REQUESTS, MAX_TOOL_CALLS, MODEL } from './agent/modeB.ts';
+import { guardCards } from './tools/cardGuard.ts';
 import { CONVERSATIONS, replay, type Conversation } from './agent/samples.ts';
 import { PAYMENTS, FEES } from './tools/data.ts';
 import { formatMoney } from './tools/money.ts';
@@ -20,9 +22,10 @@ interface Turn {
   masked: string[];
   answer: string;
   trace: TraceEntry[];
-  draftId?: string;
+  draftIds: string[];
   session: Session;
   saved?: Conversation;
+  live?: { inputTokens: number; outputTokens: number; unbacked: string[]; limit?: 'tool_calls' | 'max_tokens'; error?: string; calls: number };
 }
 
 const EXAMPLES = [
@@ -49,6 +52,14 @@ export function App() {
   const qRef = useRef<HTMLInputElement>(null);
   const draftRef = useRef<HTMLDivElement>(null);
   const focusDraft = useRef(false);
+  // The key lives only in this React state (page memory). It is never stored, logged or sent anywhere but api.anthropic.com.
+  const [apiKey, setApiKey] = useState('');
+  const [pending, setPending] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const [lastDraft, setLastDraft] = useState<string | null>(null); // focus target after the confirm dialog closes
+
+  // Stop a live request when the page goes away.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   useEffect(() => {
     if (!focusAnswer.current) return;
@@ -69,23 +80,64 @@ export function App() {
   }, [confirming]);
 
   function openSaved(c: Conversation) {
+    if (pending) return;
     const r = replay(c);
+    // A saved conversation replaces the chat, so typed questions start a new session (no hidden drafts stay behind).
+    live.current = newSession();
     setActiveChip(c.id);
     focusAnswer.current = true;
-    setTurns([{ key: keySeq++, user: r.userText, masked: r.masked, answer: c.answer, trace: r.calls, draftId: r.draftId, session: r.session, saved: c }]);
+    setTurns([{ key: keySeq++, user: r.userText, masked: r.masked, answer: c.answer, trace: r.calls, draftIds: r.draftId ? [r.draftId] : [], session: r.session, saved: c }]);
     setAnnounce(`Saved conversation opened. ${r.calls.length} tool calls.${r.masked.length ? ' A card number was hidden.' : ''}`);
   }
 
-  function onAsk(e: FormEvent) {
+  async function onAsk(e: FormEvent) {
     e.preventDefault();
-    if (!q.trim()) return;
+    if (!q.trim() || pending) return;
+    if (apiKey) {
+      await askLive(q);
+      return;
+    }
     const r = respond(q, live.current);
     setQ('');
     setActiveChip(null);
     focusAnswer.current = true;
-    const turn: Turn = { key: keySeq++, user: r.userText, masked: r.masked, answer: r.answer, trace: r.calls, draftId: r.draftId, session: live.current };
+    const turn: Turn = { key: keySeq++, user: r.userText, masked: r.masked, answer: r.answer, trace: r.calls, draftIds: r.draftId ? [r.draftId] : [], session: live.current };
     setTurns((t) => [...t, turn]);
     setAnnounce(`Answer ready. ${r.calls.length} tool calls.${r.masked.length ? ' A card number was hidden.' : ''}`);
+  }
+
+  async function askLive(question: string) {
+    const session = live.current;
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setPending(true);
+    setQ('');
+    setActiveChip(null);
+    setAnnounce('Asking Claude.');
+    let turn: Turn;
+    try {
+      // Only the tool context goes to the agent loop, never the Session: it cannot submit a refund.
+      const r = await askClaudeWithTools(apiKey, question, session.ctx, fetch, ctrl.signal);
+      // On an error, the reply still holds the tool calls and drafts made before it, so every draft gets a card.
+      turn = {
+        key: keySeq++, user: r.userText, masked: r.masked, answer: r.answer, trace: r.calls, draftIds: r.draftIds, session,
+        live: { inputTokens: r.inputTokens, outputTokens: r.outputTokens, unbacked: r.unbacked, limit: r.limit, error: r.error, calls: r.calls.length },
+      };
+      if (r.error) setQ(question);
+      setAnnounce(r.error ? r.error : `Claude answered. ${r.calls.length} tool calls.${r.masked.length ? ' A card number was hidden.' : ''}`);
+    } catch (err) {
+      // Only a key with wrong characters gets here (before any request).
+      const msg = err instanceof LiveModeError ? err.message : 'Something went wrong.';
+      const g = guardCards(question);
+      turn = { key: keySeq++, user: g.text, masked: g.masked, answer: msg, trace: [], draftIds: [], session, live: { inputTokens: 0, outputTokens: 0, unbacked: [], error: msg, calls: 0 } };
+      setQ(question);
+      setAnnounce(msg);
+    } finally {
+      abortRef.current = null;
+      setPending(false);
+    }
+    focusAnswer.current = true;
+    setTurns((t) => [...t, turn]);
   }
 
   function onConfirm() {
@@ -111,7 +163,7 @@ export function App() {
           <p className="eyebrow">AI demo · Tool use</p>
           <h1 className="display demo-title">Qollqa Pay support assistant</h1>
           <p className="lead">It answers from tool results, takes fees from code, and asks you before it acts.</p>
-          <p className="hint">This version has no live AI model: saved conversations and a keyword router. A live Claude mode is planned.</p>
+          <p className="hint">Two modes. Free mode (no key): saved conversations and a keyword router, no AI. Live mode: paste your own Anthropic API key and a Claude model picks the same tools.</p>
           <p className="note banner" role="note">
             Demo. Qollqa Pay is fictional. No real money, accounts or cards. Never type a real card number.
           </p>
@@ -126,7 +178,7 @@ export function App() {
           </ol>
           <div className="chips">
             {CONVERSATIONS.filter((c) => c.kind === 'normal').map((c) => (
-              <button key={c.id} type="button" className="chip" aria-pressed={activeChip === c.id} onClick={() => openSaved(c)}>
+              <button key={c.id} type="button" className="chip" aria-pressed={activeChip === c.id} onClick={() => openSaved(c)} disabled={pending}>
                 {c.label}
               </button>
             ))}
@@ -134,7 +186,7 @@ export function App() {
           <h3 className="eyebrow attack-title">Attack examples: tricks the assistant must refuse (saved, not a live test)</h3>
           <div className="chips">
             {CONVERSATIONS.filter((c) => c.kind === 'attack').map((c) => (
-              <button key={c.id} type="button" className="chip chip-attack" aria-pressed={activeChip === c.id} onClick={() => openSaved(c)}>
+              <button key={c.id} type="button" className="chip chip-attack" aria-pressed={activeChip === c.id} onClick={() => openSaved(c)} disabled={pending}>
                 {c.label}
               </button>
             ))}
@@ -164,7 +216,16 @@ export function App() {
                     <span className="visually-hidden">Assistant: </span>
                     {t.answer}
                   </div>
-                  {t.draftId && <DraftCard turn={t} cardRef={i === turns.length - 1 ? draftRef : undefined} onReview={(draft) => setConfirming({ turn: t, draft })} />}
+                  {t.live && <LiveNote live={t.live} />}
+                  {t.draftIds.map((id) => (
+                    <DraftCard
+                      key={id}
+                      turn={t}
+                      draftId={id}
+                      cardRef={confirming === null && lastDraft === id ? draftRef : undefined}
+                      onReview={(draft) => { setLastDraft(draft.draft_id); setConfirming({ turn: t, draft }); }}
+                    />
+                  ))}
                 </div>
               ))}
             </div>
@@ -172,14 +233,37 @@ export function App() {
             <form onSubmit={onAsk} className="ask">
               <label htmlFor="q" className="visually-hidden">Your question</label>
               <input id="q" ref={qRef} className="field" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Example: Refund QP-DEMO-0007" autoComplete="off" maxLength={500} />
-              <button type="submit" className="button button-primary" disabled={!q.trim()}>Ask</button>
+              <button type="submit" className="button button-primary" disabled={!q.trim() || pending}>
+                {pending ? 'Asking…' : apiKey ? 'Ask Claude' : 'Ask'}
+              </button>
+              {pending && <button type="button" className="button button-secondary" onClick={() => abortRef.current?.abort()}>Stop</button>}
             </form>
+            <p className="hint mode-line" aria-live="polite">
+              {apiKey
+                ? `Live mode: ${MODEL} answers with your key. Each question is new: Claude does not see your earlier questions.`
+                : 'Free mode: no AI, no key.'}
+            </p>
+            <details className="card key">
+              <summary>{apiKey ? 'Your Anthropic API key is active' : 'Optional: ask Claude with your own Anthropic API key'}</summary>
+              <p className="note">Your key, your cost. Do not share it.</p>
+              <p className="hint">
+                The key stays in this page's memory only. The page does not save it, and a reload clears it. It goes only to
+                api.anthropic.com. Card numbers are hidden before your question is sent. Per question: max {MAX_TOOL_CALLS} tool calls, {MAX_REQUESTS} requests, {MAX_QUESTION_OUTPUT_TOKENS} output tokens. Tip: use a key with a low spend limit.
+              </p>
+              <label htmlFor="key" className="visually-hidden">Anthropic API key</label>
+              <input
+                id="key" name="demo-api-key" className="field" type="password" value={apiKey}
+                onChange={(e) => setApiKey(e.target.value.trim())} placeholder="Anthropic API key"
+                autoComplete="new-password" spellCheck={false} data-1p-ignore="" data-lpignore="true" data-bwignore=""
+              />
+              {apiKey && <button type="button" className="button button-secondary" onClick={() => { abortRef.current?.abort(); setApiKey(''); }}>Clear key</button>}
+            </details>
             <div className="examples">
               <p className="hint">Free mode (no AI, no key) answers these kinds of questions. Try one:</p>
               <ul>
                 {EXAMPLES.map((ex) => (
                   <li key={ex}>
-                    <button type="button" className="link-button" onClick={() => { setQ(ex); qRef.current?.focus(); }}>{ex}</button>
+                    <button type="button" className="link-button" disabled={pending} onClick={() => { setQ(ex); qRef.current?.focus(); }}>{ex}</button>
                   </li>
                 ))}
               </ul>
@@ -189,7 +273,7 @@ export function App() {
           {/* tabIndex: the panel can scroll, so keyboard users must be able to reach it */}
           <aside aria-labelledby="trace-title" className="card trace" tabIndex={0}>
             <h2 id="trace-title" className="trace-title">Tool trace</h2>
-            <p className="hint">Each tool call, its input and its result. The numbers in the answer come from these results.</p>
+            <p className="hint">Each tool call, its input and its result. {apiKey ? 'In live mode, compare the numbers in the answer with these results.' : 'The numbers in the answer come from these results.'}</p>
             {!shown || shown.trace.length === 0 ? (
               <p className="empty">{shown ? 'No tool calls for this answer.' : 'No tool calls yet.'}</p>
             ) : (
@@ -270,7 +354,7 @@ export function App() {
         <div className="footer-group">
           <h2 className="footer-title">This demo</h2>
           <p>
-            Fictional wallet, fake data. Runs fully in your browser: no server, no analytics. Open source (MIT). Built by{' '}
+            Fictional wallet, fake data. Runs fully in your browser: no server, no analytics. Live mode sends your question only to api.anthropic.com, with your key. Open source (MIT). Built by{' '}
             <a href="https://mapagino.com" target="_blank" rel="noopener noreferrer">Mapagino</a> with Claude.
           </p>
         </div>
@@ -286,8 +370,25 @@ export function App() {
   );
 }
 
-function DraftCard({ turn, onReview, cardRef }: { turn: Turn; onReview: (d: RefundDraft) => void; cardRef?: Ref<HTMLDivElement> }) {
-  const d = turn.session.store.get(turn.draftId!);
+function LiveNote({ live }: { live: NonNullable<Turn['live']> }) {
+  return (
+    <p className="hint live-note">
+      <span className="tag">Claude, your key</span> {live.inputTokens} input + {live.outputTokens} output tokens.
+      {live.error && <span className="tag tag-bad"> No full answer. Your question is back in the box.</span>}
+      {live.limit === 'tool_calls' && ' The tool-call limit stopped it.'}
+      {live.limit === 'max_tokens' && ' The token limit cut the answer.'}
+      {!live.error && live.unbacked.length > 0 && (
+        <span className="tag tag-bad"> Number check (limited): {live.unbacked.length} not found in a tool result ({live.unbacked.slice(0, 3).join(', ')}). Compare with the trace.</span>
+      )}
+      {!live.error && live.unbacked.length === 0 && live.calls > 0 && (
+        <span className="tag tag-ok"> Number check (limited): each number was found in a tool result</span>
+      )}
+    </p>
+  );
+}
+
+function DraftCard({ turn, draftId, onReview, cardRef }: { turn: Turn; draftId: string; onReview: (d: RefundDraft) => void; cardRef?: Ref<HTMLDivElement> }) {
+  const d = turn.session.store.get(draftId);
   if (!d) return null;
   return (
     <div className="card draft" tabIndex={-1} ref={cardRef}>
