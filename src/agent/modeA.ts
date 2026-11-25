@@ -9,7 +9,7 @@ import type { Payment } from '../tools/data.ts';
 import type { FeeQuote } from '../tools/fees.ts';
 import type { Eligibility, RefundDraft } from '../tools/refunds.ts';
 
-// Safety: give an agent loop (Phase 2) only `ctx`, never the whole Session. `store.submit` is for the Confirm button.
+// Safety: give the live agent loop (modeB.ts) only `ctx`, never the whole Session. `store.submit` is for the Confirm button.
 export interface Session {
   store: RefundStore; // submit() is for the confirm button only
   ctx: ToolContext; // what the tools get: create drafts, open tickets
@@ -62,7 +62,7 @@ function statusAnswer(p: Payment & { total_cents: number }): string {
 const HELP =
   'The free mode answers these questions: where is a payment, why was I charged a fee, can I get a refund, ' +
   'I do not recognize a charge, and how much does it cost to send money. Use a payment ID from the table ' +
-  '(example: QP-DEMO-0007). For other questions, a live Claude mode with your own key is planned.';
+  '(example: QP-DEMO-0007). For other questions, use live mode: paste your own Anthropic API key.';
 
 export function respond(raw: string, s: Session): Reply {
   const g = guardCards(raw);

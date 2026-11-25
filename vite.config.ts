@@ -3,10 +3,10 @@ import react from '@vitejs/plugin-react';
 
 // Content-Security-Policy as a <meta> tag (GitHub Pages cannot set headers).
 // Only in the production build: the dev server needs inline scripts.
-// Network calls: only this site (Phase 1 makes no API calls).
+// Network calls: this site, and the Anthropic API for live mode (the visitor's own key).
 const CSP = [
   "default-src 'self'",
-  "connect-src 'self'", // Phase 2 (own key) adds https://api.anthropic.com
+  "connect-src 'self' https://api.anthropic.com",
   "script-src 'self'",
   "style-src 'self'",
   "img-src 'self' data:",
