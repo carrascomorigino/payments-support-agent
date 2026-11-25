@@ -1,0 +1,36 @@
+{
+  "name": "payments-support-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Support assistant for a fictional wallet: answers from tool results, fees from code, asks before it acts.",
+  "license": "MIT",
+  "scripts": {
+    "fill-samples": "tsx scripts/fill-samples.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "eslint": "^9.39.5",
+    "fast-check": "~4.10.2",
+    "globals": "^17.14.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.73.0",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  }
+}

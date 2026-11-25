@@ -1,0 +1,11 @@
+{
+  "note": "Fictional fee table for the Qollqa Pay demo. Not a real price list.",
+  "currencies": ["PEN", "USD"],
+  "max_amount_cents": 500000,
+  "methods": {
+    "wallet_balance": { "label": "Wallet balance", "percent_bps": 0, "fixed_cents": 0, "min_cents": 0 },
+    "debit_card": { "label": "Debit card", "percent_bps": 150, "fixed_cents": 0, "min_cents": 50 },
+    "credit_card": { "label": "Credit card", "percent_bps": 350, "fixed_cents": 100, "min_cents": 0 },
+    "bank_transfer": { "label": "Bank transfer", "percent_bps": 0, "fixed_cents": 200, "min_cents": 0 }
+  }
+}

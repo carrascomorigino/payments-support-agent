@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Fake test keys only (Phase 2 tests will keep them in tests/fixtures/)."
+paths = ['''tests/fixtures/''']
