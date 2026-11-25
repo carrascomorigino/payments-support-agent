@@ -32,10 +32,16 @@ const METHOD_WORDS: [RegExp, MethodId][] = [
 // "S/ 250", "S/250.50", "US$ 40", "$40", "250 soles", "40 dollars", "1,250.00 PEN"
 const AMOUNT = /(S\/|US\$|\$)?\s?(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\s?(soles|sol|pen|usd|dollars?|d[oó]lares)?/i;
 
-function findAmount(text: string): { cents: number; currency: Currency } | null {
+function findAmount(text: string): { cents: number; currency: Currency } | 'unclear' | null {
   const scrubbed = text.replace(ID, ' ');
   const m = AMOUNT.exec(scrubbed);
   if (!m) return null;
+  // Reject amounts that could be read two ways: "1.250" (Spanish thousands), "250,50" (Spanish decimal comma),
+  // "250.999" (3 decimals) or a minus sign. The visitor is asked to write the amount again.
+  const after = scrubbed.slice(m.index + m[0].length);
+  const before = scrubbed.slice(0, m.index + (m[1] ?? '').length);
+  if (/^\s*[.,]?\d/.test(after) || /^[.,]\d/.test(scrubbed.slice(m.index + m[0].trimEnd().length)) || /-\s*$/.test(before)) return 'unclear';
+  if (/^\d{1,3}\.\d{3}$/.test(m[2])) return 'unclear';
   const cents = parseAmountToCents(m[2]);
   if (cents === null || cents <= 0) return null;
   const sym = (m[1] ?? '').toUpperCase();
@@ -54,9 +60,9 @@ export function route(text: string): Route {
 
   if (DISPUTE.test(text)) return { intent: 'dispute', paymentId };
   if (REFUND.test(text)) return paymentId ? { intent: 'refund', paymentId } : { intent: 'need_id', about: 'refund' };
-  if (!paymentId && (QUOTE.test(text) || (FEE.test(text) && findAmount(text)))) {
+  if (!paymentId && (QUOTE.test(text) || (FEE.test(text) && findAmount(text) !== null))) {
     const amount = findAmount(text);
-    if (!amount) return { intent: 'need_amount' };
+    if (!amount || amount === 'unclear') return { intent: 'need_amount' };
     const found = findMethods(text);
     const methods: MethodId[] = found.length ? found : ['wallet_balance', 'debit_card', 'credit_card', 'bank_transfer'];
     return { intent: 'quote', amountCents: amount.cents, currency: amount.currency, methods };

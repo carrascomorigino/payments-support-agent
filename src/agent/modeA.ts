@@ -9,6 +9,7 @@ import type { Payment } from '../tools/data.ts';
 import type { FeeQuote } from '../tools/fees.ts';
 import type { Eligibility, RefundDraft } from '../tools/refunds.ts';
 
+// Safety: give an agent loop (Phase 2) only `ctx`, never the whole Session. `store.submit` is for the Confirm button.
 export interface Session {
   store: RefundStore; // submit() is for the confirm button only
   ctx: ToolContext; // what the tools get: create drafts, open tickets

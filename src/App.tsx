@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type Ref } from 'react';
 import { SiteFooter, SiteHeader } from './shell/Shell.tsx';
 import { newSession, respond, type Session } from './agent/modeA.ts';
 import { CONVERSATIONS, replay, type Conversation } from './agent/samples.ts';
@@ -45,6 +45,10 @@ export function App() {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const lastAnswerRef = useRef<HTMLDivElement>(null);
   const focusAnswer = useRef(false);
+  const [announce, setAnnounce] = useState('');
+  const qRef = useRef<HTMLInputElement>(null);
+  const draftRef = useRef<HTMLDivElement>(null);
+  const focusDraft = useRef(false);
 
   useEffect(() => {
     if (!focusAnswer.current) return;
@@ -57,6 +61,11 @@ export function App() {
     if (!d) return;
     if (confirming && !d.open) d.showModal();
     if (!confirming && d.open) d.close();
+    // The opener button can be gone after Confirm: move focus to the draft card.
+    if (!confirming && focusDraft.current) {
+      focusDraft.current = false;
+      draftRef.current?.focus();
+    }
   }, [confirming]);
 
   function openSaved(c: Conversation) {
@@ -64,6 +73,7 @@ export function App() {
     setActiveChip(c.id);
     focusAnswer.current = true;
     setTurns([{ key: keySeq++, user: r.userText, masked: r.masked, answer: c.answer, trace: r.calls, draftId: r.draftId, session: r.session, saved: c }]);
+    setAnnounce(`Saved conversation opened. ${r.calls.length} tool calls.${r.masked.length ? ' A card number was hidden.' : ''}`);
   }
 
   function onAsk(e: FormEvent) {
@@ -74,7 +84,8 @@ export function App() {
     setActiveChip(null);
     focusAnswer.current = true;
     const turn: Turn = { key: keySeq++, user: r.userText, masked: r.masked, answer: r.answer, trace: r.calls, draftId: r.draftId, session: live.current };
-    setTurns((t) => [...t.filter((x) => !x.saved), turn]);
+    setTurns((t) => [...t, turn]);
+    setAnnounce(`Answer ready. ${r.calls.length} tool calls.${r.masked.length ? ' A card number was hidden.' : ''}`);
   }
 
   function onConfirm() {
@@ -84,6 +95,8 @@ export function App() {
     if (done) {
       turn.trace.push({ tool: 'submitRefund (Confirm button)', input: { draft_id: draft.draft_id }, output: { status: done.status }, button: true });
     }
+    focusDraft.current = true;
+    setAnnounce(done ? 'Refund request sent. Demo: no real money moved.' : '');
     setConfirming(null);
     setTick((n) => n + 1);
   }
@@ -98,6 +111,7 @@ export function App() {
           <p className="eyebrow">AI demo · Tool use</p>
           <h1 className="display demo-title">Qollqa Pay support assistant</h1>
           <p className="lead">It answers from tool results, takes fees from code, and asks you before it acts.</p>
+          <p className="hint">This version has no live AI model: saved conversations and a keyword router. A live Claude mode is planned.</p>
           <p className="note banner" role="note">
             Demo. Qollqa Pay is fictional. No real money, accounts or cards. Never type a real card number.
           </p>
@@ -105,10 +119,11 @@ export function App() {
 
         <section aria-labelledby="chips-title" className="samples">
           <h2 id="chips-title" className="eyebrow">Saved conversations (no key)</h2>
-          <p className="hint">
-            Written with Claude Code. When you open one, the page runs its tool calls again with code and marks each result that
-            matches. Free mode below has no AI: it uses a keyword router. Live answers from a model are not tested here.
-          </p>
+          <ol className="steps">
+            <li>Open a saved conversation.</li>
+            <li>Read the Tool trace: each call is run again by code now.</li>
+            <li>Open “Can I get a refund?” and press Confirm. Then type a fake card number below.</li>
+          </ol>
           <div className="chips">
             {CONVERSATIONS.filter((c) => c.kind === 'normal').map((c) => (
               <button key={c.id} type="button" className="chip" aria-pressed={activeChip === c.id} onClick={() => openSaved(c)}>
@@ -116,7 +131,7 @@ export function App() {
               </button>
             ))}
           </div>
-          <h3 className="eyebrow attack-title">Attack examples · Saved example, not a live test</h3>
+          <h3 className="eyebrow attack-title">Attack examples: tricks the assistant must refuse (saved, not a live test)</h3>
           <div className="chips">
             {CONVERSATIONS.filter((c) => c.kind === 'attack').map((c) => (
               <button key={c.id} type="button" className="chip chip-attack" aria-pressed={activeChip === c.id} onClick={() => openSaved(c)}>
@@ -135,8 +150,8 @@ export function App() {
                 <div key={t.key} className="turn">
                   {t.saved && (
                     <p className="hint saved-note">
-                      {t.saved.kind === 'attack' ? 'Saved example, not a live test. ' : 'Saved conversation. '}
-                      Tool results are re-run live by code.
+                      {t.saved.kind === 'attack' ? 'Saved example, not a live test. ' : 'Saved conversation, written with Claude Code. '}
+                      Tool results are re-run live by code. Questions you type below start a new chat.
                     </p>
                   )}
                   <p className="bubble bubble-user"><span className="visually-hidden">You: </span>{t.user}</p>
@@ -149,14 +164,14 @@ export function App() {
                     <span className="visually-hidden">Assistant: </span>
                     {t.answer}
                   </div>
-                  {t.draftId && <DraftCard turn={t} onReview={(draft) => setConfirming({ turn: t, draft })} />}
+                  {t.draftId && <DraftCard turn={t} cardRef={i === turns.length - 1 ? draftRef : undefined} onReview={(draft) => setConfirming({ turn: t, draft })} />}
                 </div>
               ))}
             </div>
 
             <form onSubmit={onAsk} className="ask">
               <label htmlFor="q" className="visually-hidden">Your question</label>
-              <input id="q" className="field" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Example: Refund QP-DEMO-0007" autoComplete="off" maxLength={500} />
+              <input id="q" ref={qRef} className="field" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Example: Refund QP-DEMO-0007" autoComplete="off" maxLength={500} />
               <button type="submit" className="button button-primary" disabled={!q.trim()}>Ask</button>
             </form>
             <div className="examples">
@@ -164,7 +179,7 @@ export function App() {
               <ul>
                 {EXAMPLES.map((ex) => (
                   <li key={ex}>
-                    <button type="button" className="link-button" onClick={() => setQ(ex)}>{ex}</button>
+                    <button type="button" className="link-button" onClick={() => { setQ(ex); qRef.current?.focus(); }}>{ex}</button>
                   </li>
                 ))}
               </ul>
@@ -174,7 +189,7 @@ export function App() {
           {/* tabIndex: the panel can scroll, so keyboard users must be able to reach it */}
           <aside aria-labelledby="trace-title" className="card trace" tabIndex={0}>
             <h2 id="trace-title" className="trace-title">Tool trace</h2>
-            <p className="hint">Each tool call, its input and its result. Every number in the answer comes from here.</p>
+            <p className="hint">Each tool call, its input and its result. The numbers in the answer come from these results.</p>
             {!shown || shown.trace.length === 0 ? (
               <p className="empty">{shown ? 'No tool calls for this answer.' : 'No tool calls yet.'}</p>
             ) : (
@@ -242,12 +257,14 @@ export function App() {
             </dl>
             <p className="hint">Demo: no real money moves. Only this button sends the request. The assistant cannot press it.</p>
             <div className="confirm-actions">
-              <button type="button" className="button button-secondary" onClick={() => setConfirming(null)}>Cancel</button>
+              <button type="button" className="button button-secondary" autoFocus onClick={() => setConfirming(null)}>Cancel</button>
               <button type="button" className="button button-primary" onClick={onConfirm}>Confirm</button>
             </div>
           </>
         )}
       </dialog>
+
+      <p className="visually-hidden" role="status">{announce}</p>
 
       <SiteFooter>
         <div className="footer-group">
@@ -269,11 +286,11 @@ export function App() {
   );
 }
 
-function DraftCard({ turn, onReview }: { turn: Turn; onReview: (d: RefundDraft) => void }) {
+function DraftCard({ turn, onReview, cardRef }: { turn: Turn; onReview: (d: RefundDraft) => void; cardRef?: Ref<HTMLDivElement> }) {
   const d = turn.session.store.get(turn.draftId!);
   if (!d) return null;
   return (
-    <div className="card draft">
+    <div className="card draft" tabIndex={-1} ref={cardRef}>
       <p className="trace-head">
         <strong>Refund {d.status === 'draft' ? 'draft' : 'request sent'}</strong> <code>{d.draft_id}</code>
       </p>

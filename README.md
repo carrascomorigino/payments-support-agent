@@ -19,9 +19,9 @@ Live: https://demos.mapagino.com/payments-support-agent/
 ## Why you can trust the numbers
 
 - **Fees come from code.** Integer cents, one rounding rule (half up to the cent), property tests against exact BigInt math.
-- **No invented numbers.** A test parses every amount, date, percent and number in each saved answer and checks it against the tool results of that conversation.
+- **No invented numbers (CI check).** A test parses every amount, date, percent and number in each saved answer and free-mode template, and checks it against the tool results of that conversation.
 - **Confirm before actions.** The AI side can only make a draft. The tools get a create-only object; the submit function is reachable only from the Confirm button. A test runs 500 random tool-call sequences and finds zero submitted refunds.
-- **Card guard.** Card numbers (13-19 digits, Luhn check, with spaces or dashes) are masked. Best effort, not PCI protection.
+- **Card guard.** Card numbers (13-19 digits, known card prefix, Luhn check, with spaces, dashes or other short separators) are masked. Best effort, not PCI protection: see the limits in the threat list.
 
 Details and the threat list: [docs/architecture.md](docs/architecture.md).
 

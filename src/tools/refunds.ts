@@ -9,7 +9,7 @@ export interface Eligibility {
   payment_id: string;
   eligible: boolean;
   reason: string;
-  policy_rule: number; // rule number in data/refund-policy.md
+  policy_rule: number; // rule number in data/refund-policy.md (0 = bad data, not a policy rule)
   days_since_payment: number;
   window_days: number;
   refund_cents: number; // 0 when not eligible
@@ -22,6 +22,7 @@ function daysBetween(fromIso: string, toIso: string): number {
 }
 
 function verdict(p: Payment): { eligible: boolean; reason: string; rule: number } {
+  if (daysBetween(p.date, DEMO_TODAY) < 0) return { eligible: false, reason: 'The payment date is in the future. Check the payment ID.', rule: 0 };
   if (p.status === 'failed') return { eligible: false, reason: 'The payment failed, so it was not charged.', rule: 4 };
   if (p.status === 'pending') return { eligible: false, reason: 'The payment is still pending. Wait until it is completed.', rule: 5 };
   if (p.status === 'refunded') return { eligible: false, reason: `The payment was already refunded on ${p.refunded_on}.`, rule: 6 };

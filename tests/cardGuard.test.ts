@@ -42,7 +42,7 @@ describe('card guard', () => {
   it('masks any Luhn-valid 13-19 digit number with any grouping (property)', () => {
     fc.assert(
       fc.property(
-        fc.integer({ min: 13, max: 19 }).chain((n) => fc.tuple(fc.stringMatching(new RegExp(`^[1-9]\\d{${n - 2}}$`)), fc.constantFrom('', ' ', '-'), fc.integer({ min: 3, max: 6 }))),
+        fc.integer({ min: 13, max: 19 }).chain((n) => fc.tuple(fc.stringMatching(new RegExp(`^4\\d{${n - 2}}$`)), fc.constantFrom('', ' ', '-'), fc.integer({ min: 3, max: 6 }))),
         ([body, sep, size]) => {
           const card = withCheckDigit(body);
           const shown = sep ? group(card, sep, size) : card;
@@ -65,5 +65,23 @@ describe('card guard', () => {
   it('running it twice changes nothing more', () => {
     const once = guardCards('4111-1111-1111-1111').text;
     expect(guardCards(once).text).toBe(once);
+  });
+});
+
+describe('card guard, critics pass', () => {
+  it('masks odd separators and full-width digits', () => {
+    for (const t of ['4111  1111 1111 1111', '4111 - 1111 - 1111 - 1111', '4111/1111/1111/1111', '4111_1111_1111_1111', '4111\n1111\n1111\n1111', '4111 1111 1111 1111', '４１１１１１１１１１１１１１１１']) {
+      expect(guardCards(`card ${t} ok`).masked).toEqual(['1111']);
+    }
+  });
+  it('does not mask two dates or two phone numbers', () => {
+    expect(guardCards('2026-04-01 2026-11-12').masked).toEqual([]);
+    expect(guardCards('987 654 321 987 654 321').masked).toEqual([]);
+  });
+  it('stays fast on a very long digit run', () => {
+    const long = Array.from({ length: 5000 }, (_, i) => String(1000 + (i % 9000))).join(' ');
+    const t0 = performance.now();
+    guardCards(long);
+    expect(performance.now() - t0).toBeLessThan(1000);
   });
 });

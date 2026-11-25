@@ -86,3 +86,29 @@ describe('the number check itself', () => {
     expect(inventedNumbers('It takes 3 days.', calls)).toEqual(['number 3']);
   });
 });
+
+describe('amounts that can be read two ways are rejected', () => {
+  it.each(['How much to send S/ 1.250 by credit card?', 'How much to send 250,50 soles?', 'How much to send S/ 250.999?', 'How much to send $-5?'])('%s', (t) => {
+    expect(route(t)).toEqual({ intent: 'need_amount' });
+  });
+});
+
+describe('number check, critics pass', () => {
+  const calls: ToolCall[] = [
+    { tool: 'quote_fee', input: {}, output: { amount_cents: 25000, currency: 'PEN', percent_bps: 350, fee_cents: 975, total_cents: 25975 } },
+    { tool: 'get_payment', input: {}, output: { date: '2026-11-11', count: 12 } },
+  ];
+  it('reads PEN and soles as money', () => {
+    expect(inventedNumbers('Fee PEN 9.75, or 9.75 soles.', calls)).toEqual([]);
+    expect(inventedNumbers('Fee 11 soles.', calls)).toEqual(['money 11 soles']);
+  });
+  it('does not let a date part or a cents value pass as a count', () => {
+    expect(inventedNumbers('It takes 11 days.', calls)).toEqual(['number 11']);
+    expect(inventedNumbers('About 975 people.', calls)).toEqual(['number 975']);
+    expect(inventedNumbers('You have 12 payments.', calls)).toEqual([]);
+  });
+  it('flags a decimal with no currency and a third decimal digit', () => {
+    expect(inventedNumbers('Fee 9.75.', calls)).toEqual(['decimal 9.75 with no currency']);
+    expect(inventedNumbers('Fee S/ 9.750.', calls)).toEqual(['money S/ 9.750']);
+  });
+});
