@@ -1,0 +1,13 @@
+{
+  "note": "Fictional demo user. No real person.",
+  "user": {
+    "id": "U-DEMO-01",
+    "display_name": "Demo user",
+    "methods": [
+      { "id": "wallet_balance", "label": "Wallet balance" },
+      { "id": "debit_card", "label": "Debit card ending 0005" },
+      { "id": "credit_card", "label": "Credit card ending 0009" },
+      { "id": "bank_transfer", "label": "Bank transfer" }
+    ]
+  }
+}

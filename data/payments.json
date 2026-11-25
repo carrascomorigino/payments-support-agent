@@ -1,0 +1,18 @@
+{
+  "note": "Fictional payments. Fees follow data/fees.json (a test checks this). Demo date: 2026-11-20.",
+  "demo_today": "2026-11-20",
+  "payments": [
+    { "id": "QP-DEMO-0001", "date": "2026-09-28", "merchant": "Andes Books", "category": "purchase", "amount_cents": 8990, "currency": "PEN", "method": "credit_card", "fee_cents": 415, "status": "completed" },
+    { "id": "QP-DEMO-0002", "date": "2026-11-02", "merchant": "Cusco Coffee Roasters", "category": "purchase", "amount_cents": 12000, "currency": "PEN", "method": "credit_card", "fee_cents": 520, "status": "completed" },
+    { "id": "QP-DEMO-0003", "date": "2026-11-18", "merchant": "Luz Norte Electric", "category": "bill", "amount_cents": 14550, "currency": "PEN", "method": "wallet_balance", "fee_cents": 0, "status": "failed", "failure_reason": "Not enough wallet balance" },
+    { "id": "QP-DEMO-0004", "date": "2026-11-10", "merchant": "Transfer to contact R.D.", "category": "transfer", "amount_cents": 20000, "currency": "PEN", "method": "wallet_balance", "fee_cents": 0, "status": "completed" },
+    { "id": "QP-DEMO-0005", "date": "2026-11-15", "merchant": "Pixel Print Shop", "category": "purchase", "amount_cents": 6400, "currency": "PEN", "method": "debit_card", "fee_cents": 96, "status": "completed" },
+    { "id": "QP-DEMO-0006", "date": "2026-11-05", "merchant": "Sierra Tickets", "category": "purchase", "amount_cents": 3500, "currency": "PEN", "method": "debit_card", "fee_cents": 53, "status": "refunded", "refunded_on": "2026-11-08" },
+    { "id": "QP-DEMO-0007", "date": "2026-11-12", "merchant": "Lima Tech Store", "category": "purchase", "amount_cents": 29900, "currency": "PEN", "method": "credit_card", "fee_cents": 1147, "status": "completed" },
+    { "id": "QP-DEMO-0008", "date": "2026-11-19", "merchant": "Nube Music", "category": "subscription", "amount_cents": 990, "currency": "USD", "method": "credit_card", "fee_cents": 135, "status": "completed" },
+    { "id": "QP-DEMO-0009", "date": "2026-11-19", "merchant": "Rent share", "category": "transfer", "amount_cents": 80000, "currency": "PEN", "method": "bank_transfer", "fee_cents": 200, "status": "pending" },
+    { "id": "QP-DEMO-0010", "date": "2026-11-01", "merchant": "Mercado Verde", "category": "purchase", "amount_cents": 4230, "currency": "PEN", "method": "debit_card", "fee_cents": 63, "status": "disputed" },
+    { "id": "QP-DEMO-0011", "date": "2026-11-17", "merchant": "QX DIGITAL SVCS", "category": "purchase", "amount_cents": 5900, "currency": "USD", "method": "credit_card", "fee_cents": 307, "status": "completed" },
+    { "id": "QP-DEMO-0012", "date": "2026-11-16", "merchant": "Taxi Rapido", "category": "purchase", "amount_cents": 1800, "currency": "PEN", "method": "debit_card", "fee_cents": 50, "status": "completed" }
+  ]
+}

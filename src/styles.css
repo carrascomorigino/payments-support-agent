@@ -1,0 +1,340 @@
+/* Demo page parts. Shared look (tokens, header, footer, buttons, cards, chips) is in shell/shell.css.
+   Colors only from tokens. No @media (prefers-color-scheme) here: add a token instead. */
+
+.page-wide {
+  max-width: 1120px;
+}
+
+.intro {
+  margin-bottom: var(--space-6);
+}
+
+.demo-title {
+  font-size: clamp(34px, 7vw, 52px);
+}
+
+.banner {
+  margin: var(--space-4) 0 0;
+}
+
+.samples {
+  margin-bottom: var(--space-6);
+}
+
+.steps {
+  margin: 0 0 var(--space-3);
+  padding-inline-start: var(--space-5);
+}
+
+.draft:focus {
+  outline: none;
+}
+
+.draft:focus-visible {
+  outline: 2px solid var(--focus-ring);
+}
+
+/* Keep the ID column in view when the table scrolls sideways on a phone */
+td:first-child,
+th:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--surface-raised);
+}
+
+th:first-child {
+  background: var(--surface-tint);
+}
+
+.attack-title {
+  margin-top: var(--space-4);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Attack chips: a dashed border, not a new color */
+.chip-attack {
+  border-style: dashed;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--space-6);
+  align-items: start;
+  margin-bottom: var(--space-8);
+}
+
+.chat-log > * + * {
+  margin-top: var(--space-4);
+}
+
+.turn > * {
+  margin: 0;
+}
+
+.turn > * + * {
+  margin-top: var(--space-2);
+}
+
+.bubble {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.bubble-user {
+  margin-inline-start: auto;
+  max-width: 85%;
+  width: fit-content;
+  background: var(--surface-tint);
+}
+
+.bubble-bot {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-soft);
+  border-inline-start: 6px solid var(--primary);
+}
+
+.bubble-bot:focus {
+  outline: none;
+}
+
+.bubble-bot:focus-visible {
+  outline: 2px solid var(--focus-ring);
+}
+
+.saved-note {
+  font-style: italic;
+}
+
+.mask-note {
+  border-inline-start: 6px solid var(--primary);
+}
+
+.draft > * {
+  margin: 0;
+}
+
+.draft > * + * {
+  margin-top: var(--space-3);
+}
+
+.ask {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+}
+
+.ask .field {
+  flex: 1;
+}
+
+.examples ul {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-2) 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: var(--space-2) 0;
+  min-height: 44px;
+  color: var(--link);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-5) var(--space-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--ink-muted);
+  text-align: center;
+}
+
+.hint {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ink-muted);
+  margin: var(--space-2) 0 0;
+  overflow-wrap: anywhere;
+}
+
+/* Tool trace */
+.trace {
+  position: sticky;
+  top: 96px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.trace-title {
+  font-size: 20px;
+  line-height: 28px;
+  margin: 0;
+}
+
+.trace .empty {
+  margin-top: var(--space-4);
+}
+
+.trace-list {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-4) 0 0;
+}
+
+.trace-item {
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--border-soft);
+}
+
+.trace-button {
+  border-inline-start: 6px solid var(--primary);
+  padding-inline-start: var(--space-3);
+}
+
+.trace-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.trace-label {
+  margin: var(--space-2) 0 0;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+.trace pre {
+  margin: var(--space-1) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-tint);
+  font-size: 13px;
+  line-height: 18px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.tag-bad {
+  outline: 2px solid var(--primary);
+}
+
+/* Payments table */
+.payments {
+  margin-bottom: var(--space-8);
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin-top: var(--space-3);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+th,
+td {
+  padding: var(--space-2) var(--space-3);
+  text-align: start;
+  border-bottom: 1px solid var(--border-soft);
+  white-space: nowrap;
+}
+
+th {
+  background: var(--surface-tint);
+}
+
+.num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.status {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+}
+
+.status-failed,
+.status-disputed {
+  border-width: 2px;
+  border-color: var(--primary);
+  font-weight: 700;
+}
+
+/* Confirm dialog */
+.confirm {
+  max-width: min(480px, calc(100vw - 32px));
+  border: 1px solid var(--border-strong);
+  color: var(--ink);
+}
+
+.confirm::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.draft-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: var(--space-4) 0 0;
+}
+
+.draft-facts dt {
+  font-weight: 700;
+}
+
+.draft-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+@media (max-width: 860px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .trace {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .ask {
+    flex-direction: column;
+  }
+}
